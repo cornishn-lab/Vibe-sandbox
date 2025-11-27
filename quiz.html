@@ -2,8 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Adaptive Infinite Vibe Quiz</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Adaptive Infinite Vibe Quiz (Safe JS)</title>
   <style>
     * {
       box-sizing: border-box;
@@ -18,56 +17,23 @@
       align-items: center;
       justify-content: center;
       padding: 20px;
-      background: radial-gradient(circle at top, #1e293b, #020617);
+      background: #020617;
       transition: background 0.4s ease;
       color: #e5e7eb;
     }
 
-    body.vibe-correct {
-      background: radial-gradient(circle at top, #22c55e33, #022c22);
-    }
-
-    body.vibe-wrong {
-      background: radial-gradient(circle at top, #ef444433, #111827);
-    }
+    body.correct-bg { background: #022c22; }
+    body.wrong-bg   { background: #2b0b0b; }
 
     .container {
       width: 100%;
-      max-width: 640px;
+      max-width: 600px;
       background: #020617;
       border-radius: 20px;
-      padding: 20px 20px 24px;
-      box-shadow:
-        0 0 0 1px #111827,
-        0 20px 50px rgba(0, 0, 0, 0.75);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .orb {
-      position: absolute;
-      width: 220px;
-      height: 220px;
-      border-radius: 999px;
-      background: radial-gradient(circle at center, #4f46e5, transparent);
-      opacity: 0.25;
-      filter: blur(10px);
-      top: -60px;
-      right: -40px;
-      pointer-events: none;
-      transition: transform 0.5s ease, background 0.5s ease, opacity 0.5s ease;
-    }
-
-    .orb.good {
-      background: radial-gradient(circle at center, #22c55e, transparent);
-      opacity: 0.35;
-      transform: translate(-10px, 10px) scale(1.05);
-    }
-
-    .orb.bad {
-      background: radial-gradient(circle at center, #ef4444, transparent);
-      opacity: 0.35;
-      transform: translate(-30px, 20px) scale(1.08);
+      padding: 20px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
+      border: 1px solid #111827;
+      color: #e5e7eb;
     }
 
     .header {
@@ -75,21 +41,11 @@
       justify-content: space-between;
       align-items: center;
       margin-bottom: 14px;
-      position: relative;
-      z-index: 1;
-    }
-
-    .title-block {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
     }
 
     .title {
       font-size: 1.2rem;
       font-weight: 700;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
     }
 
     .subtitle {
@@ -97,26 +53,456 @@
       color: #9ca3af;
     }
 
-    .score-pill {
-      background: rgba(15, 23, 42, 0.9);
-      border-radius: 999px;
-      padding: 6px 12px;
+    .score {
+      font-size: 0.85rem;
+      color: #9ca3af;
+    }
+
+    .question-meta {
       display: flex;
+      justify-content: space-between;
       align-items: center;
+      font-size: 0.85rem;
+      color: #9ca3af;
+      margin-bottom: 8px;
+    }
+
+    .emoji {
+      font-size: 1.6rem;
+      transition: transform 0.2s ease;
+    }
+
+    .emoji-happy { transform: scale(1.1) rotate(-5deg); }
+    .emoji-sad   { transform: scale(1.1) rotate(5deg); }
+
+    .question {
+      margin-bottom: 12px;
+      font-size: 1rem;
+    }
+
+    .options {
+      display: grid;
       gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .option-btn {
+      border-radius: 999px;
+      border: 1px solid #1f2937;
+      background: #0b1120;
+      color: #e5e7eb;
+      padding: 10px 12px;
+      text-align: left;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      transition:
+        background 0.15s ease,
+        box-shadow 0.15s ease,
+        transform 0.1s ease,
+        border-color 0.15s ease;
+    }
+
+    .option-btn span.key {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #9ca3af;
+    }
+
+    .option-btn:hover {
+      background: #020617;
+      box-shadow: 0 8px 16px rgba(15, 23, 42, 0.7);
+      transform: translateY(-1px);
+      border-color: #4f46e5;
+    }
+
+    .option-btn.correct {
+      background: #064e3b;
+      border-color: #16a34a;
+      box-shadow: 0 0 20px rgba(22, 163, 74, 0.7);
+    }
+
+    .option-btn.wrong {
+      background: #7f1d1d;
+      border-color: #dc2626;
+      box-shadow: 0 0 20px rgba(220, 38, 38, 0.7);
+    }
+
+    .option-btn.disabled {
+      pointer-events: none;
+      opacity: 0.9;
+    }
+
+    .feedback {
+      min-height: 24px;
+      font-size: 0.9rem;
+      color: #9ca3af;
+      margin-bottom: 6px;
+    }
+
+    .feedback.correct { color: #4ade80; }
+    .feedback.wrong   { color: #fca5a5; }
+
+    .controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       font-size: 0.8rem;
       color: #9ca3af;
-      border: 1px solid #1f2937;
+      margin-top: 4px;
     }
 
-    .dot {
-      width: 8px;
-      height: 8px;
+    .bar-block {
+      flex: 1;
+      margin-right: 8px;
+    }
+
+    .bar-label {
+      font-size: 0.75rem;
+      color: #6b7280;
+      margin-bottom: 3px;
+    }
+
+    .progress {
+      height: 6px;
       border-radius: 999px;
-      background: #22c55e;
-      box-shadow: 0 0 10px rgba(34, 197, 94, 0.7);
+      background: #020617;
+      border: 1px solid #111827;
+      overflow: hidden;
     }
 
-    .card {
-      background: rgba(15, 23, 42, 0.96);
-      border-radius: 18px;
+    .progress-inner {
+      height: 100%;
+      width: 0%;
+      background: #4f46e5;
+    }
+
+    .next-info {
+      font-size: 0.75rem;
+      text-align: right;
+    }
+
+    .end-screen {
+      text-align: center;
+      padding: 12px 4px 4px;
+    }
+
+    .end-score {
+      font-size: 2rem;
+      margin-bottom: 6px;
+    }
+
+    .end-message {
+      font-size: 0.95rem;
+      color: #9ca3af;
+      margin-bottom: 10px;
+    }
+
+    .restart-btn {
+      border-radius: 999px;
+      padding: 8px 16px;
+      border: 1px solid #1f2937;
+      background: #020617;
+      color: #e5e7eb;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition:
+        background 0.15s ease,
+        transform 0.1s ease,
+        box-shadow 0.15s ease;
+    }
+
+    .restart-btn:hover {
+      background: #02081f;
+      transform: translateY(-1px);
+      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.7);
+    }
+
+    @keyframes shake {
+      0% { transform: translateX(0); }
+      20% { transform: translateX(-4px); }
+      40% { transform: translateX(4px); }
+      60% { transform: translateX(-3px); }
+      80% { transform: translateX(3px); }
+      100% { transform: translateX(0); }
+    }
+
+    .shake {
+      animation: shake 0.25s ease;
+    }
+  </style>
+</head>
+<body>
+  <div class="container" id="container">
+    <div class="header">
+      <div>
+        <div class="title">Adaptive Infinite Quiz</div>
+        <div class="subtitle">Starts easy, gets harder · ends when you miss one</div>
+      </div>
+      <div class="score" id="scoreText">Streak: 0</div>
+    </div>
+
+    <div id="quizArea">
+      <!-- Quiz content injected by JavaScript -->
+    </div>
+  </div>
+
+  <script>
+    // ===============================
+    // Question pools (difficulty-tagged)
+    // ===============================
+
+    var questionPool = [
+      // Difficulty 1 (very easy arithmetic)
+      { difficulty: 1, question: "What is 2 + 2?", options: ["3", "4", "5", "6"], answer: 1 },
+      { difficulty: 1, question: "What is 5 - 3?", options: ["1", "2", "3", "4"], answer: 1 },
+      { difficulty: 1, question: "What is 3 + 1?", options: ["3", "4", "5", "6"], answer: 1 },
+
+      // Difficulty 2 (slightly harder arithmetic)
+      { difficulty: 2, question: "What is 6 × 3?", options: ["9", "12", "18", "21"], answer: 2 },
+      { difficulty: 2, question: "What is 15 ÷ 3?", options: ["3", "4", "5", "6"], answer: 2 },
+      { difficulty: 2, question: "What is 9 + 7?", options: ["14", "15", "16", "17"], answer: 3 },
+
+      // Difficulty 3 (general knowledge)
+      { difficulty: 3, question: "What is the capital of France?", options: ["Berlin", "Paris", "Madrid", "Rome"], answer: 1 },
+      { difficulty: 3, question: "What is the capital city of Japan?", options: ["Seoul", "Tokyo", "Osaka", "Kyoto"], answer: 1 },
+      { difficulty: 3, question: "Which ocean is the largest?", options: ["Atlantic", "Indian", "Pacific", "Arctic"], answer: 2 },
+
+      // Difficulty 4 (harder facts)
+      { difficulty: 4, question: "Who developed the theory of general relativity?", options: ["Isaac Newton", "Albert Einstein", "Nikola Tesla", "Galileo Galilei"], answer: 1 },
+      { difficulty: 4, question: "What is the chemical symbol for gold?", options: ["Ag", "Go", "Au", "Gd"], answer: 2 },
+      { difficulty: 4, question: "Which country has the largest population (early 2020s)?", options: ["India", "United States", "China", "Indonesia"], answer: 2 },
+
+      // Difficulty 5 (trickier)
+      { difficulty: 5, question: "Which number is a prime?", options: ["21", "33", "37", "45"], answer: 2 },
+      { difficulty: 5, question: "The Battle of Waterloo took place in which year?", options: ["1789", "1815", "1848", "1914"], answer: 1 },
+      { difficulty: 5, question: "In economics, GDP stands for:", options: ["Global Development Plan", "Gross Domestic Product", "General Demand Price", "Gross Demand Production"], answer: 1 }
+    ];
+
+    // ===============================
+    // State
+    // ===============================
+
+    var streak = 0;
+    var difficulty = 1;            // start at easiest
+    var maxDifficultyReached = 1;
+    var currentQuestion = null;
+    var hasAnswered = false;
+
+    var quizArea = document.getElementById("quizArea");
+    var scoreText = document.getElementById("scoreText");
+    var container = document.getElementById("container");
+    var body = document.body;
+
+    // ===============================
+    // Helpers
+    // ===============================
+
+    function randInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function getRandomQuestionForDifficulty(level) {
+      var candidates = [];
+      var i;
+      for (i = 0; i < questionPool.length; i++) {
+        if (questionPool[i].difficulty <= level) {
+          candidates.push(questionPool[i]);
+        }
+      }
+      if (candidates.length === 0) {
+        candidates = questionPool;
+      }
+      var index = randInt(0, candidates.length - 1);
+      return candidates[index];
+    }
+
+    // ===============================
+    // Rendering
+    // ===============================
+
+    function renderQuestion() {
+      hasAnswered = false;
+
+      // clear vibes
+      body.className = body.className.replace("correct-bg", "");
+      body.className = body.className.replace("wrong-bg", "");
+      container.className = container.className.replace("shake", "");
+
+      if (difficulty > maxDifficultyReached) {
+        maxDifficultyReached = difficulty;
+      }
+
+      currentQuestion = getRandomQuestionForDifficulty(difficulty);
+
+      var conceptualMaxDifficulty = 5;
+      var diffPercent = (difficulty / conceptualMaxDifficulty) * 100;
+      if (diffPercent > 100) diffPercent = 100;
+
+      var q = currentQuestion;
+      var html = "";
+
+      html += '<div class="question-meta">';
+      html += '  <div>Streak: ' + streak + ' · Difficulty: ' + difficulty + '</div>';
+      html += '  <div class="emoji" id="emoji">🤔</div>';
+      html += '</div>';
+
+      html += '<div class="question">' + q.question + '</div>';
+
+      html += '<div class="options">';
+      var i;
+      for (i = 0; i < q.options.length; i++) {
+        html += '  <button class="option-btn" data-index="' + i + '">';
+        html += '    <span class="key">' + String.fromCharCode(65 + i) + '</span>';
+        html += '    <span>' + q.options[i] + '</span>';
+        html += '  </button>';
+      }
+      html += '</div>';
+
+      html += '<div class="feedback" id="feedback"></div>';
+
+      html += '<div class="controls">';
+      html += '  <div class="bar-block">';
+      html += '    <div class="bar-label">Difficulty progression (max: ' + maxDifficultyReached + ')</div>';
+      html += '    <div class="progress">';
+      html += '      <div class="progress-inner" id="diffBar" style="width:' + diffPercent + '%;"></div>';
+      html += '    </div>';
+      html += '  </div>';
+      html += '  <div class="next-info">Answer correctly to see the next question</div>';
+      html += '</div>';
+
+      quizArea.innerHTML = html;
+
+      var optionButtons = document.getElementsByClassName("option-btn");
+      for (i = 0; i < optionButtons.length; i++) {
+        optionButtons[i].onclick = handleAnswer;
+      }
+    }
+
+    function handleAnswer(e) {
+      if (hasAnswered) return;
+      hasAnswered = true;
+
+      var btn = e.currentTarget || e.srcElement;
+      var idx = parseInt(btn.getAttribute("data-index"), 10);
+      var correctIdx = currentQuestion.answer;
+
+      var feedback = document.getElementById("feedback");
+      var emoji = document.getElementById("emoji");
+      var optionButtons = document.getElementsByClassName("option-btn");
+      var i;
+
+      for (i = 0; i < optionButtons.length; i++) {
+        optionButtons[i].className += " disabled";
+      }
+
+      if (idx === correctIdx) {
+        // correct
+        streak++;
+        scoreText.textContent = "Streak: " + streak;
+
+        btn.className += " correct";
+        feedback.textContent = "Nice! ✅ Next question coming up…";
+        feedback.className = "feedback correct";
+        emoji.textContent = "😎";
+        emoji.className += " emoji-happy";
+
+        if (body.className.indexOf("correct-bg") === -1) {
+          body.className += " correct-bg";
+        }
+
+        // every 3 correct answers → bump difficulty (up to 5)
+        if (streak % 3 === 0 && difficulty < 5) {
+          difficulty++;
+        }
+
+        // update max difficulty display (in case it increased)
+        if (difficulty > maxDifficultyReached) {
+          maxDifficultyReached = difficulty;
+        }
+
+        setTimeout(function () {
+          renderQuestion();
+        }, 800);
+      } else {
+        // wrong
+        btn.className += " wrong";
+
+        // highlight correct
+        for (i = 0; i < optionButtons.length; i++) {
+          var b = optionButtons[i];
+          var bIdx = parseInt(b.getAttribute("data-index"), 10);
+          if (bIdx === correctIdx) {
+            b.className += " correct";
+          }
+        }
+
+        feedback.textContent = "Incorrect – that ends your run.";
+        feedback.className = "feedback wrong";
+        emoji.textContent = "😬";
+        emoji.className += " emoji-sad";
+
+        if (body.className.indexOf("wrong-bg") === -1) {
+          body.className += " wrong-bg";
+        }
+        if (container.className.indexOf("shake") === -1) {
+          container.className += " shake";
+        }
+        setTimeout(function () {
+          container.className = container.className.replace("shake", "");
+        }, 260);
+
+        setTimeout(function () {
+          renderEndScreen();
+        }, 900);
+      }
+    }
+
+    function renderEndScreen() {
+      body.className = body.className.replace("correct-bg", "");
+      body.className = body.className.replace("wrong-bg", "");
+
+      var msg;
+      var emoji;
+
+      if (streak === 0) {
+        msg = "Tough start – warm up and try again 🔁";
+        emoji = "🌱";
+      } else if (streak < 5) {
+        msg = "Nice attempt – you’ve started the climb 🔼";
+        emoji = "💪";
+      } else if (streak < 10) {
+        msg = "Solid run – strong quiz brain 🔥";
+        emoji = "🚀";
+      } else {
+        msg = "Monster run – elite trivia brain 🧠";
+        emoji = "🏆";
+      }
+
+      quizArea.innerHTML =
+        '<div class="end-screen">' +
+          '<div style="font-size:2rem;margin-bottom:6px;">' + emoji + '</div>' +
+          '<div class="end-score">Streak: ' + streak + '</div>' +
+          '<div class="end-message">Highest difficulty reached: ' + maxDifficultyReached + '</div>' +
+          '<div class="end-message">' + msg + '</div>' +
+          '<button class="restart-btn" id="restartBtn">Play Again</button>' +
+        '</div>';
+
+      var restartBtn = document.getElementById("restartBtn");
+      restartBtn.onclick = function () {
+        streak = 0;
+        difficulty = 1;
+        maxDifficultyReached = 1;
+        scoreText.textContent = "Streak: 0";
+        renderQuestion();
+      };
+    }
+
+    // Start the infinite quiz
+    renderQuestion();
+  </script>
+</body>
+</html>
